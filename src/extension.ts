@@ -1,26 +1,25 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+const LOG_NAME = "trailmix.jsonl";
+
 export function activate(context: vscode.ExtensionContext) {
+    const dirUri = vscode.workspace.workspaceFolders?.[0].uri;
+    console.log('trailmix loaded at', dirUri);
+    if (dirUri === undefined) return;
+    const logUri = vscode.Uri.joinPath(dirUri, LOG_NAME);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "trailmix" is now active!');
+    function log(kind: string, event: Record<string, any>) {
+        const entry = { t: new Date().getDate(), k: kind, ...event };
+        fs.appendFileSync(logUri.fsPath, JSON.stringify(entry) + '\n');
+        console.log(entry);
+    }
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('trailmix.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from TrailMix!');
-	});
-
-	context.subscriptions.push(disposable);
+    const open = (e: vscode.TextEditor | undefined) => {
+        if (e) log('open', { f: e.document.fileName, c: e.document.fileName.endsWith(LOG_NAME) ? null : e.document.getText() });
+    };
+    open(vscode.window.activeTextEditor);
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(open));
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
