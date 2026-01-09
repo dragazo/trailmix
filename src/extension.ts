@@ -43,6 +43,16 @@ export function activate(context: vscode.ExtensionContext) {
             log(k, { f: e.document.fileName, s: format_pos(x.range.start), e: format_pos(x.range.end), c: x.text });
         }
     }));
+
+    const watcher = vscode.workspace.createFileSystemWatcher("**/*");
+    context.subscriptions.push(watcher);
+    const change = (e: vscode.Uri) => {
+        if (e.fsPath.endsWith(LOG_NAME)) return;
+        log('change', { f: e.fsPath, c: fs.readFileSync(e.fsPath, 'utf-8') });
+    };
+    watcher.onDidCreate(change);
+    watcher.onDidChange(change);
+    watcher.onDidDelete(e => log('delete', { f: e.fsPath }));
 }
 
 export function deactivate() {
